@@ -7,6 +7,16 @@
 
 import SwiftUI
 
+enum SortOrder: String, CaseIterable, Identifiable {
+    public var id: Self { self }
+    case ascending, descending
+}
+
+enum SortMethod: String, CaseIterable, Identifiable {
+    var id: Self { self }
+    case `default`, name, country, price, runs
+}
+
 struct ContentView: View {
     let resorts: [Resort] = Bundle.main.decode("resorts.json")
     @StateObject var favorites = Favorites()
@@ -14,23 +24,68 @@ struct ContentView: View {
     @State private var selectedResort: Resort? = nil
     @State private var searchText = ""
     
-    var filteredResorts: [Resort] {
-        if searchText.isEmpty {
-            return resorts
-        } else {
-            return resorts.filter { $0.name.localizedCaseInsensitiveContains(searchText)}
+    @State private var sortMethod = SortMethod.default
+    @State private var sortOrder = SortOrder.ascending
+    
+    
+    var filteredAndSortedResorts: [Resort] {
+        var result = resorts
+        
+        if !searchText.isEmpty {
+            result = result.filter { $0.name.localizedCaseInsensitiveContains(searchText)}
         }
+        
+        switch sortMethod {
+        case .name:
+            result = result.sorted { $0.name < $1.name }
+        case .country:
+            result = result.sorted { $0.country < $1.name }
+        case .price:
+            result = result.sorted { $0.price < $1.price }
+        case .runs:
+            result = result.sorted { $0.runs < $1.runs }
+        default:
+            break
+        }
+        
+        switch sortOrder {
+        case .ascending:
+            break
+        case .descending:
+            result = result.reversed()
+        }
+        
+        return result
     }
         
     var body: some View {
         NavigationSplitView {
-            List(filteredResorts, selection: $selectedResort) { resort in
+            List(filteredAndSortedResorts, selection: $selectedResort) { resort in
                 NavigationLink(value: resort) {
                     resortRow(resort)
                 }
             }
             .navigationTitle("Resorts")
             .searchable(text: $searchText, prompt: "Search for a resort")
+            .toolbar {
+                Menu {
+                    Menu("Sort By") {
+                        Picker("Sort By", selection: $sortMethod) {
+                            ForEach(SortMethod.allCases) { method in
+                                Text(method.rawValue.capitalized)
+                            }
+                        }
+                        
+                        Picker("Order", selection: $sortOrder) {
+                            ForEach(SortOrder.allCases) { order in
+                                Text(order.rawValue.capitalized)
+                            }
+                        }
+                    }
+                } label: {
+                    Label("Menu", systemImage: "ellipsis.circle")
+                }
+            }
         } detail: {
             if let resort = selectedResort {
                 ResortView(resort: resort)

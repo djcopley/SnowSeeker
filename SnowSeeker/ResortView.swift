@@ -13,12 +13,17 @@ struct ResortView: View {
     
     @Environment(\.horizontalSizeClass) var sizeClass
     @Environment(\.dynamicTypeSize) var typeSize
+    @Environment(\.colorScheme) var colorScheme
 
     @State private var selectedFacility: Facility?
     @State private var showingFacility = false
     
+    var isFavorite: Bool {
+        favorites.contains(resort)
+    }
+    
     var favoriteButtonString: String {
-        favorites.contains(resort) ? "Remove from favorites" : "Add to favorites"
+        isFavorite ? "Remove from favorites" : "Add to favorites"
     }
     
     var body: some View {
@@ -27,6 +32,19 @@ struct ResortView: View {
                 Image(decorative: resort.id)
                     .resizable()
                     .scaledToFit()
+                    .overlay(alignment: .bottomTrailing) {
+                        Button(action: updateResortFavorite) {
+                            Label("Favorite", systemImage: isFavorite ? "heart.fill" : "heart")
+                                .font(Font.headline.bold())
+                                .bold()
+                                .labelStyle(.iconOnly)
+                                .foregroundColor(isFavorite ? .red : colorScheme == .light ? .black : .white)
+                                .padding(6)
+                                .background(.thinMaterial)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                        .padding(5)
+                    }
                 
                 HStack {
                     if sizeClass == .compact && typeSize > .large {
@@ -58,9 +76,12 @@ struct ResortView: View {
                             }
                         }
                     }
-                    Button(favoriteButtonString, action: updateResortFavorite)
-                        .buttonStyle(.borderedProminent)
-                        .padding()
+                    
+                    Divider()
+                        .padding(.vertical, 8)
+                    
+                    Text("Image Credit: \(resort.imageCredit)")
+                        .font(.caption)
                 }
                 .padding(.horizontal)
             }
@@ -69,13 +90,13 @@ struct ResortView: View {
         .navigationBarTitleDisplayMode(.inline)
         .alert(selectedFacility?.name ?? "More information", isPresented: $showingFacility, presenting: selectedFacility) { _ in
             // Just use default action
-        } message: {
-            Text($0.description)
+        } message: { resort in
+            Text(resort.description)
         }
     }
     
     func updateResortFavorite() {
-        if favorites.contains(resort) {
+        if isFavorite {
             favorites.remove(resort: resort)
         } else {
             favorites.add(resort: resort)

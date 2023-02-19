@@ -10,11 +10,11 @@ import Foundation
 class Favorites: ObservableObject {
     @Published var resorts: Set<String>
 
-    private let saveKey = "Favorites"
+    private static let saveKey = "Favorites"
     
     init() {
-        // load save data
-        resorts = []
+        let storedFavorites = UserDefaults.standard.object(forKey: Self.saveKey) as? [String] ?? []
+        resorts = Set(storedFavorites)
     }
     
     func contains(_ resort: Resort) -> Bool {
@@ -22,18 +22,16 @@ class Favorites: ObservableObject {
     }
     
     func add(resort: Resort) {
-        objectWillChange.send()
         resorts.insert(resort.id)
         save()
     }
     
     func remove(resort: Resort) {
-        objectWillChange.send()
         resorts.remove(resort.id)
         save()
     }
     
-    func save() {
-        
+    private func save() {
+        UserDefaults.standard.set(Array<String>(resorts), forKey: Self.saveKey)
     }
 }
